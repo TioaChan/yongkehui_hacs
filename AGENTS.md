@@ -55,6 +55,13 @@ and `git push`.
 - HA integration brand assets live under `custom_components/yongkehui/brand/`;
   the brands component checks this directory via `Integration.has_branding`.
   The repository root `icon.png` is kept for HACS/repository display.
+- HACS dashboard rows for integrations render icons with Home Assistant
+  `brandsUrl(domain)`. Before the integration is installed, that generally means
+  HACS can only show a store-list icon if the domain exists in the
+  `home-assistant/brands` data. The local `brand/` images are picked up after
+  HACS downloads the integration into `custom_components` and Home Assistant is
+  restarted. README keeps a logo image so the HACS repository detail page still
+  renders a picture from this repository.
 - `deviceid` is generated once during config flow and persisted in the config entry.
 - `communityid` is not sent during login, captcha, or profile calls.
 - `communityid` is only sent after house selection, for door list and unlock calls.

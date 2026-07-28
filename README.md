@@ -1,5 +1,7 @@
 # 永客会 Home Assistant 集成
 
+![永客会](custom_components/yongkehui/brand/logo.png)
+
 这是一个面向 HACS 的 Home Assistant 自定义集成，用于登录永客会接口、发现门禁列表，并把门禁暴露为 `lock` 实体。
 
 ## 功能
