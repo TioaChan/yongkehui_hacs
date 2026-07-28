@@ -125,6 +125,28 @@ key below. The web JS and IPA have historically contained the same RSA public
 key. The IPA does not store it as plain `MIGf...` text. It is stored as
 XOR-obfuscated data in the main binary.
 
+When re-checking the key from an IPA, use the IPA only as local reference
+material. Do not commit the IPA, extracted app bundle, binary dumps, packet
+captures, or account data.
+
+Recommended reverse trail:
+
+1. Extract the IPA as a zip archive and inspect `Payload/*.app`.
+2. First search plain resources and strings:
+   `rg -a "sg-rsa|jsencrypt|MIGf|BEGIN PUBLIC KEY|setPublicKey|encryptLong" Payload`
+   and `strings -a Payload/*.app/* | rg "RSA|MIGf|setPublicKey|encryptLong"`.
+3. If no plain key appears, open the main Mach-O binary in Hopper, Ghidra, or
+   IDA and search Objective-C selectors/classes around RSA setup. Useful terms
+   from the inspected app are `SEGEncryptManager` and `setPublicKey:`.
+4. Follow cross references from the public-key setter back to the call site.
+   Look for helper functions that materialize a string from an address, length,
+   and a simple transform key.
+5. For this historical IPA, the helper uses XOR obfuscation. Dump the referenced
+   byte range and decode it as `bytes(byte ^ 0x58 for byte in blob[:216])`.
+6. Validate the result before changing the integration: Base64-decode it,
+   ensure it loads as a DER RSA public key, and compare it with the key fetched
+   from `sg-rsa.js` plus the bundled fallback in `api/crypto.py`.
+
 Native trail:
 
 - `+[SEGEncryptManager setPublicKey:]`
