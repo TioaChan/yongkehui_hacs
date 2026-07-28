@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.storage/
+dev/ha_debug/config/.HA_VERSION
+dev/ha_debug/config/.cache/
+dev/ha_debug/config/.cloud/
+dev/ha_debug/config/.ha_run.lock
+dev/ha_debug/config/.storage/
+dev/ha_debug/config/.yongkehui_captcha/
+dev/ha_debug/config/blueprints/
+dev/ha_debug/config/deps/
+dev/ha_debug/config/home-assistant.log*
+dev/ha_debug/config/home-assistant_v2.db*
+dev/ha_debug/config/tts/
+dev/ha_debug/config/www/

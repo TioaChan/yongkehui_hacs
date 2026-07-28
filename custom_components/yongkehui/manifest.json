@@ -1,0 +1,12 @@
+{
+  "domain": "yongkehui",
+  "name": "永客会",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/custom-components/yongkehui",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "requirements": ["cryptography>=42.0.0"],
+  "version": "0.1.0"
+}

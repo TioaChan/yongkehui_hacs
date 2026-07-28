@@ -1,0 +1,40 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "永客会",
+        "description": "登录永客会并自动发现门禁。",
+        "data": {
+          "username": "用户名/手机号",
+          "password": "密码"
+        }
+      },
+      "captcha": {
+        "title": "永客会验证码",
+        "description": "{captcha_image}",
+        "data": {
+          "img_code": "图片验证码",
+          "refresh_captcha": "刷新验证码"
+        }
+      },
+      "house": {
+        "title": "选择房屋",
+        "description": "选择要暴露到 Home Assistant 的房屋/小区。",
+        "data": {
+          "house_key": "房屋"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "无法连接永客会服务，请稍后重试。",
+      "captcha_required": "永客会要求图片验证码，请输入最新验证码。",
+      "captcha_missing": "请输入图片验证码，或勾选刷新验证码。",
+      "invalid_auth": "登录失败，请检查用户名和密码。",
+      "no_locks_found": "登录成功，但没有发现可用门禁。",
+      "unknown": "发生未知错误。"
+    },
+    "abort": {
+      "already_configured": "该永客会账号已经配置。"
+    }
+  }
+}

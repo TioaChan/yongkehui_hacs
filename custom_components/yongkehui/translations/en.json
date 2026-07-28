@@ -1,0 +1,40 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "YongKeHui",
+        "description": "Sign in to YongKeHui and discover door locks.",
+        "data": {
+          "username": "Username/phone",
+          "password": "Password"
+        }
+      },
+      "captcha": {
+        "title": "YongKeHui Captcha",
+        "description": "{captcha_image}",
+        "data": {
+          "img_code": "Image captcha",
+          "refresh_captcha": "Refresh captcha"
+        }
+      },
+      "house": {
+        "title": "Select House",
+        "description": "Select the house/community to expose to Home Assistant.",
+        "data": {
+          "house_key": "House"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to YongKeHui. Please try again later.",
+      "captcha_required": "YongKeHui requires an image captcha. Enter the latest captcha.",
+      "captcha_missing": "Enter the image captcha, or enable Refresh captcha.",
+      "invalid_auth": "Login failed. Check the username and password.",
+      "no_locks_found": "Login succeeded, but no usable locks were found.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This YongKeHui account is already configured."
+    }
+  }
+}

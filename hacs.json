@@ -1,0 +1,6 @@
+{
+  "name": "永客会",
+  "render_readme": true,
+  "domains": ["lock"],
+  "homeassistant": "2024.6.0"
+}

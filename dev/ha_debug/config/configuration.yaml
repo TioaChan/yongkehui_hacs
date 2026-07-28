@@ -1,0 +1,12 @@
+default_config:
+
+logger:
+  default: info
+  logs:
+    custom_components.yongkehui: debug
+
+homeassistant:
+  name: YongKeHui Debug
+  country: CN
+  time_zone: Asia/Shanghai
+  unit_system: metric
