@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import base64
-from functools import partial
 import logging
-from pathlib import Path
 import uuid
+from collections.abc import Mapping
+from functools import partial
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
@@ -23,8 +23,8 @@ from .api import (
     CaptchaRequired,
     InvalidAuth,
     NoLocksFound,
-    YongKeHuiHouse,
     YongKeHuiApiClient,
+    YongKeHuiHouse,
 )
 from .const import (
     CONF_COMMUNITY_ID,
@@ -66,6 +66,16 @@ def _captcha_schema() -> vol.Schema:
                 selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT)
             ),
             vol.Optional(CONF_REFRESH_CAPTCHA, default=False): selector.BooleanSelector(),
+        }
+    )
+
+
+def _reauth_schema() -> vol.Schema:
+    return vol.Schema(
+        {
+            vol.Optional(CONF_PASSWORD): selector.TextSelector(
+                selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)
+            ),
         }
     )
 
@@ -152,6 +162,31 @@ class YongKeHuiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._pending_captcha_url: str | None = None
         self._pending_api: YongKeHuiApiClient | None = None
         self._pending_houses: list[YongKeHuiHouse] = []
+        self._reauth_entry: config_entries.ConfigEntry | None = None
+
+    async def async_step_reauth(
+        self, entry_data: Mapping[str, Any]
+    ) -> config_entries.ConfigFlowResult:
+        """Recover authentication for an existing entry."""
+
+        self._reauth_entry = self._get_reauth_entry()
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Retry the saved credentials, or accept an updated password."""
+
+        if user_input is not None:
+            entry = self._get_reauth_entry()
+            return await self.async_step_user(
+                {
+                    CONF_USERNAME: entry.data[CONF_USERNAME],
+                    CONF_PASSWORD: user_input.get(CONF_PASSWORD)
+                    or entry.data[CONF_PASSWORD],
+                }
+            )
+        return self._show_login_form({})
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -160,7 +195,11 @@ class YongKeHuiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         errors: dict[str, str] = {}
         if user_input is not None:
-            device_id = str(uuid.uuid4()).upper()
+            device_id = (
+                self._reauth_entry.data[CONF_DEVICE_ID]
+                if self._reauth_entry is not None
+                else str(uuid.uuid4()).upper()
+            )
             api = _new_api(self.hass, user_input, device_id)
 
             try:
@@ -192,8 +231,22 @@ class YongKeHuiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._pending_user_input = user_input
                 self._pending_device_id = device_id
                 self._pending_api = api
-                self._pending_houses = houses
-                return await self.async_step_house()
+                return await self._async_login_complete(houses)
+
+        return self._show_login_form(errors)
+
+    def _show_login_form(
+        self, errors: dict[str, str]
+    ) -> config_entries.ConfigFlowResult:
+        if self._reauth_entry is not None:
+            return self.async_show_form(
+                step_id="reauth_confirm",
+                data_schema=_reauth_schema(),
+                errors=errors,
+                description_placeholders={
+                    "username": self._reauth_entry.data[CONF_USERNAME],
+                },
+            )
 
         return self.async_show_form(
             step_id="user",
@@ -245,6 +298,8 @@ class YongKeHuiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 except Exception:
                     _LOGGER.exception("Could not refresh YongKeHui captcha")
             except InvalidAuth:
+                if self._reauth_entry is not None:
+                    return self._show_login_form({"base": "invalid_auth"})
                 errors["base"] = "invalid_auth"
             except NoLocksFound:
                 errors["base"] = "no_locks_found"
@@ -252,8 +307,7 @@ class YongKeHuiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 _LOGGER.exception("Unexpected exception while configuring YongKeHui")
                 errors["base"] = "unknown"
             else:
-                self._pending_houses = houses
-                return await self.async_step_house()
+                return await self._async_login_complete(houses)
 
         return self._show_captcha_form(errors)
 
@@ -277,6 +331,25 @@ class YongKeHuiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         img_code, random_token = await self._pending_api.async_get_captcha()
         self._pending_random_token = random_token
         self._pending_captcha_url = await _register_captcha_image(self.hass, img_code)
+
+    async def _async_login_complete(
+        self, houses: list[YongKeHuiHouse]
+    ) -> config_entries.ConfigFlowResult:
+        """Keep the configured house when renewing an existing entry."""
+
+        self._pending_houses = houses
+        if self._reauth_entry is not None:
+            entry_data = self._reauth_entry.data
+            for index, house in enumerate(houses):
+                if (
+                    house.community_id == entry_data[CONF_COMMUNITY_ID]
+                    and house.cust_id == entry_data[CONF_CUST_ID]
+                ):
+                    return await self.async_step_house(
+                        {CONF_HOUSE_KEY: _house_key(index, house)}
+                    )
+            return self.async_abort(reason="reauth_house_not_found")
+        return await self.async_step_house()
 
     async def async_step_house(
         self, user_input: dict[str, Any] | None = None
@@ -314,6 +387,19 @@ class YongKeHuiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     _LOGGER.exception("Unexpected exception while selecting house")
                     errors["base"] = "unknown"
                 else:
+                    if self._reauth_entry is not None:
+                        if self._reauth_entry.unique_id:
+                            _pending_apis(self.hass)[
+                                self._reauth_entry.unique_id
+                            ] = self._pending_api
+                        return self.async_update_reload_and_abort(
+                            self._reauth_entry,
+                            data_updates={
+                                CONF_PASSWORD: self._pending_user_input[CONF_PASSWORD],
+                                CONF_COOKIES: self._pending_api.cookies,
+                                CONF_USER_ID: house.user_id,
+                            },
+                        )
                     username = self._pending_user_input[CONF_USERNAME]
                     unique_id = f"{username}_{house.community_id}_{house.cust_id}"
                     await self.async_set_unique_id(unique_id)
@@ -332,6 +418,9 @@ class YongKeHuiConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             CONF_HOUSE_NAME: house.name,
                         },
                     )
+
+        if self._reauth_entry is not None:
+            return self._show_login_form(errors)
 
         return self.async_show_form(
             step_id="house",

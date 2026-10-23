@@ -96,11 +96,15 @@ class YongKeHuiApiClient:
         return await self.async_get_doors()
 
     async def async_refresh(self) -> dict[str, YongKeHuiDoor]:
-        """Refresh the login state with profile and keep the current door list."""
+        """Keep the session alive, logging in once if the saved session expired."""
 
-        await self.async_profile()
-        if not self._doors:
-            return await self.async_get_doors()
+        try:
+            await self.async_profile()
+            if not self._doors:
+                return await self.async_get_doors()
+        except InvalidAuth:
+            _LOGGER.debug("YongKeHui session expired; attempting to log in again")
+            return await self.async_initialize()
         return dict(self._doors)
 
     async def async_login(

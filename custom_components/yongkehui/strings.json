@@ -9,6 +9,13 @@
           "password": "密码"
         }
       },
+      "reauth_confirm": {
+        "title": "重新登录永客会",
+        "description": "账号 {username} 的登录状态已失效。提交以使用已保存的密码重新登录；如果密码已修改，请输入新密码。永客会要求验证码时，会在下一步显示。",
+        "data": {
+          "password": "新密码（可选）"
+        }
+      },
       "captcha": {
         "title": "永客会验证码",
         "description": "{captcha_image}",
@@ -34,7 +41,9 @@
       "unknown": "发生未知错误。"
     },
     "abort": {
-      "already_configured": "该永客会账号已经配置。"
+      "already_configured": "该永客会账号已经配置。",
+      "reauth_successful": "重新登录成功，集成已重新加载。",
+      "reauth_house_not_found": "登录成功，但账号已无法访问原配置的房屋/小区。请先在永客会中确认房屋权限，再重试认证。"
     }
   }
 }

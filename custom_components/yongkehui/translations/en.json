@@ -9,6 +9,13 @@
           "password": "Password"
         }
       },
+      "reauth_confirm": {
+        "title": "Sign in to YongKeHui again",
+        "description": "The session for {username} has expired. Submit to retry with the saved password, or enter a new password if it has changed. If YongKeHui requires a captcha, it will appear in the next step.",
+        "data": {
+          "password": "New password (optional)"
+        }
+      },
       "captcha": {
         "title": "YongKeHui Captcha",
         "description": "{captcha_image}",
@@ -34,7 +41,9 @@
       "unknown": "Unexpected error."
     },
     "abort": {
-      "already_configured": "This YongKeHui account is already configured."
+      "already_configured": "This YongKeHui account is already configured.",
+      "reauth_successful": "Signed in again and reloaded the integration.",
+      "reauth_house_not_found": "Login succeeded, but this account can no longer access the configured house/community. Check house permissions in YongKeHui before retrying authentication."
     }
   }
 }

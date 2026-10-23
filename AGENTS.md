@@ -67,6 +67,18 @@ and `git push`.
 - `communityid` is only sent after house selection, for door list and unlock calls.
 - Token/session refresh calls the user profile endpoint every 6 hours to extend
   the existing login state.
+- On reload or scheduled refresh, a rejected session triggers one full login
+  using the saved username/password and persistent device id. If login requires
+  a captcha or rejects the password, the coordinator raises
+  `ConfigEntryAuthFailed` to start Home Assistant's reauthentication flow.
+- Reauthentication reuses the existing account, device id, and selected
+  community/cust context. It supports an optional new password and the existing
+  captcha form, then updates/reloads the original entry instead of creating a
+  new one. If the original house is absent from profile, authentication aborts
+  without changing the configured house or identifiers.
+- Cookies refreshed by the coordinator are persisted through
+  `async_update_entry`. The transport copies incoming cookies so response cookie
+  updates cannot mutate config-entry data before Home Assistant saves it.
 - API request logs are centralized in
   `custom_components/yongkehui/api/transport.py`
   `YongKeHuiTransport.async_json_request()`: successful calls log at debug
@@ -120,8 +132,10 @@ Unlock flow:
 Scheduled login-state refresh flow:
 
 1. Every 6 hours, GET `/uhomecp-sso/v3/userApp/profile` with current cookies.
-2. Store any returned cookies in memory.
-3. Return the already discovered door list to Home Assistant.
+2. If the session is rejected, attempt full login once, then fetch profile and
+   doors again. Captcha/password errors start reauthentication on the same entry.
+3. Persist updated cookies in the config entry.
+4. Return the already discovered door list, or the newly fetched list after login.
 
 ## RSA Public Key Finding
 
@@ -288,6 +302,17 @@ Whitespace check before commit:
 ```bash
 git diff --check
 ```
+
+Authentication/reload regression tests (Python 3.14):
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r dev/requirements-test.txt
+.venv/bin/python -m pytest -q
+```
+
+Tests use Home Assistant 2026.7.1 with mocked YongKeHui HTTP requests; they do not
+log in to a real account or unlock real doors.
 
 Commit and push:
 

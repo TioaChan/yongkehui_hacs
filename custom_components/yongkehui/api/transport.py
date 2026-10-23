@@ -33,7 +33,7 @@ class YongKeHuiTransport:
     ) -> None:
         self._session = session
         self._device_id = device_id
-        self._cookies: dict[str, str] = cookies or {}
+        self._cookies: dict[str, str] = dict(cookies) if cookies else {}
         self._api_failure_notifier = api_failure_notifier
 
     @property

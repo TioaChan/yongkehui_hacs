@@ -63,7 +63,7 @@ async def async_setup_entry(
                 hass, details
             ),
         )
-    coordinator = YongKeHuiDataUpdateCoordinator(hass, api)
+    coordinator = YongKeHuiDataUpdateCoordinator(hass, api, entry)
     if api.doors:
         coordinator.async_set_updated_data(api.doors)
     else:
